@@ -52,7 +52,7 @@ passport.use(
       }
 
       if (user.password !== password) {
-        return done(null, false, { message: "incorrect password!" });
+        return done(null, false, { message: "incorrectd password!" });
       }
 
       return done(null, user);
