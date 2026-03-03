@@ -22,7 +22,10 @@ app.use(session({ secret: "cats", resave: false, saveUninitialized: false }));
 app.use(passport.session());
 app.use(express.urlencoded({ extended: true }));
 
-app.get("/", (req, res) => res.render("index"));
+app.get("/", (req, res) => {
+  res.render("index", { user: req.user });
+});
+
 app.get("/sign-up", (req, res) => res.render("sign-up-form"));
 app.post("/sign-up", async (req, res, next) => {
   try {
@@ -42,10 +45,11 @@ passport.use(
   new LocalStrategy(async (username, password, done) => {
     try {
       const { rows } = await pool.query(
-        `SELECT * FROM users WHERE username=$1`,
+        `SELECT * FROM users WHERE username = $1`,
         [username],
       );
       const user = rows[0];
+      console.log(user);
 
       if (!user) {
         return done(null, false, { message: "incorrect username" });
@@ -68,13 +72,25 @@ passport.serializeUser((user, done) => {
 
 passport.deserializeUser(async (id, done) => {
   try {
-    const { rows } = await pool.query("SELECT * FROM users WHERE id=$1", [id]);
+    const { rows } = await pool.query("SELECT * FROM users WHERE id = $1", [
+      id,
+    ]);
     const user = rows[0];
+    console.log(rows);
+
     done(null, user);
   } catch (err) {
     done(err);
   }
 });
+
+app.post(
+  "/log-in",
+  passport.authenticate("local", {
+    successRedirect: "/",
+    failureRedirect: "/",
+  }),
+);
 
 app.listen(3000, (err) => {
   if (err) {
