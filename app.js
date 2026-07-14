@@ -31,6 +31,7 @@ passport.use(
         [username],
       );
       const user = rows[0];
+      console.log(user);
 
       if (!user) {
         return done(null, false, { message: "incorrect username" });
@@ -46,7 +47,27 @@ passport.use(
   }),
 );
 
-app.get("/", (req, res) => res.render("index"));
+passport.serializeUser((user, done) => {
+  done(null, user.id);
+});
+
+passport.deserializeUser(async (id, done) => {
+  try {
+    const { rows } = await pool.query("SELECT * FROM users WHERE id=$1", [id]);
+    const user = rows[0];
+    console.log(id);
+
+    done(null, user);
+  } catch (err) {
+    done(err);
+  }
+});
+
+app.get("/", (req, res) => {
+  console.log(req.user);
+
+  res.render("index", { user: req.user });
+});
 app.get("/sign-up", (req, res) => res.render("sign-up-form"));
 app.post("/sign-up", async (req, res, next) => {
   try {
@@ -59,6 +80,14 @@ app.post("/sign-up", async (req, res, next) => {
     return next(err);
   }
 });
+app.post(
+  "/log-in",
+  passport.authenticate("local", {
+    successRedirect: "/",
+    failureRedirect: "/",
+    failureMessage: true,
+  }),
+);
 
 const PORT = process.env.PORT;
 
