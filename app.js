@@ -22,6 +22,10 @@ app.set("view engine", "ejs");
 app.use(session({ secret: "cats", resave: false, saveUninitialized: false }));
 app.use(passport.session());
 app.use(express.urlencoded({ extended: false }));
+app.use((req, res, next) => {
+  res.locals.currentUser = req.user;
+  next();
+});
 
 passport.use(
   new LocalStrategy(async (username, password, done) => {
@@ -31,13 +35,12 @@ passport.use(
         [username],
       );
       const user = rows[0];
-      console.log(user);
 
       if (!user) {
         return done(null, false, { message: "incorrect username" });
       }
 
-      if (username.password !== password) {
+      if (user.password !== password) {
         return done(null, false, { message: "incorrect password" });
       }
       return done(null, user);
@@ -55,7 +58,6 @@ passport.deserializeUser(async (id, done) => {
   try {
     const { rows } = await pool.query("SELECT * FROM users WHERE id=$1", [id]);
     const user = rows[0];
-    console.log(id);
 
     done(null, user);
   } catch (err) {
@@ -64,9 +66,7 @@ passport.deserializeUser(async (id, done) => {
 });
 
 app.get("/", (req, res) => {
-  console.log(req.user);
-
-  res.render("index", { user: req.user });
+  res.render("index");
 });
 app.get("/sign-up", (req, res) => res.render("sign-up-form"));
 app.post("/sign-up", async (req, res, next) => {
@@ -89,6 +89,14 @@ app.post(
   }),
 );
 
+app.get("/log-out", (req, res, next) => {
+  req.logOut((err) => {
+    if (err) {
+      return next(err);
+    }
+    res.redirect("/");
+  });
+});
 const PORT = process.env.PORT;
 
 app.listen(PORT, (err) => {
