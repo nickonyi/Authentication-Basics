@@ -6,6 +6,7 @@ import { Strategy as LocalStrategy } from "passport-local";
 import dotenv from "dotenv";
 import url from "url";
 import path from "path";
+import bcrypt from "bcryptjs";
 dotenv.config();
 
 const pool = new Pool({
@@ -40,7 +41,8 @@ passport.use(
         return done(null, false, { message: "incorrect username" });
       }
 
-      if (user.password !== password) {
+      const matched = await bcrypt.compare(password, user.password);
+      if (!matched) {
         return done(null, false, { message: "incorrect password" });
       }
       return done(null, user);
@@ -71,9 +73,10 @@ app.get("/", (req, res) => {
 app.get("/sign-up", (req, res) => res.render("sign-up-form"));
 app.post("/sign-up", async (req, res, next) => {
   try {
+    const hashedPassword = await bcrypt.hash(req.body.password, 10);
     await pool.query("INSERT into users (username,password) VALUES($1,$2)", [
       req.body.username,
-      req.body.password,
+      hashedPassword,
     ]);
     res.redirect("/");
   } catch (err) {
