@@ -1,6 +1,7 @@
 import express from "express";
 import { Pool } from "pg";
 import session from "express-session";
+import connectPgSimple from "connect-pg-simple";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import dotenv from "dotenv";
@@ -12,6 +13,8 @@ dotenv.config();
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
+
+const PgSession = connectPgSimple(session);
 
 const app = express();
 const __filename = url.fileURLToPath(import.meta.url);
@@ -27,6 +30,19 @@ app.use((req, res, next) => {
   res.locals.currentUser = req.user;
   next();
 });
+
+app.use(
+  session({
+    store: new PgSession({
+      pool: pool,
+      tableName: "user_sessions",
+    }),
+    secret: "my secret",
+    resave: false,
+    saveUninitialized: false,
+    cookie: { maxAge: 14 * 24 * 60 * 60 * 1000 },
+  }),
+);
 
 passport.use(
   new LocalStrategy(async (username, password, done) => {
