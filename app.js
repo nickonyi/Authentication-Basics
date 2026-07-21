@@ -23,14 +23,6 @@ const __dirname = path.dirname(__filename);
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "ejs");
 
-app.use(session({ secret: "cats", resave: false, saveUninitialized: false }));
-app.use(passport.session());
-app.use(express.urlencoded({ extended: false }));
-app.use((req, res, next) => {
-  res.locals.currentUser = req.user;
-  next();
-});
-
 app.use(
   session({
     store: new PgSession({
@@ -40,9 +32,15 @@ app.use(
     secret: "my secret",
     resave: false,
     saveUninitialized: false,
-    cookie: { maxAge: 14 * 24 * 60 * 60 * 1000 },
+    cookie: { maxAge: 1 * 24 * 60 * 60 * 1000 },
   }),
 );
+app.use(passport.session());
+app.use(express.urlencoded({ extended: false }));
+app.use((req, res, next) => {
+  res.locals.currentUser = req.user;
+  next();
+});
 
 passport.use(
   new LocalStrategy(async (username, password, done) => {
