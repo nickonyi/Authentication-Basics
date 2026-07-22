@@ -82,6 +82,8 @@ passport.deserializeUser(async (id, done) => {
 });
 
 app.get("/", (req, res) => {
+  console.log(req.session);
+
   res.render("index");
 });
 app.get("/sign-up", (req, res) => res.render("sign-up-form"));
